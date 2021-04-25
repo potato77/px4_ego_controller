@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   tf
   tf2_eigen
-  #prometheus_msgs
+  prometheus_msgs
   quadrotor_msgs
   geometry_msgs
   mavros_msgs
