@@ -13,7 +13,7 @@
 #include <prometheus_msgs/ControlCommand.h>
 
 
-#include "pos_controller.h"
+#include "control_utils.h"
 #include "uav_utils/geometry_utils.h"
 #include "uav_utils/utils.h"
 
@@ -52,6 +52,14 @@ Drone_State_t drone_state;
 
 Eigen::Quaterniond u_q_des;   
 Eigen::Vector4d u_att;   
+
+
+
+// 控制参数
+Eigen::Matrix3d Kp;
+Eigen::Matrix3d Kv;
+Eigen::Matrix3d Ka;
+
 
 void init()
 {
@@ -164,6 +172,35 @@ void send_attitude_setpoint(Eigen::Vector4d& u_att)
 
     setpoint_raw_attitude_pub.publish(att_setpoint);
 }
+
+// 输入：
+// 无人机位置、速度、偏航角
+// 期望位置、速度、加速度、偏航角
+// 输出：
+void pos_controller()
+{
+    Eigen::Vector3d pos_error = pos_des - pos_drone;
+    Eigen::Vector3d vel_error  = vel_des - vel_drone;
+
+    // 加速度 - 反馈部分
+    // 根据位置、速度误差计算，同时设置限幅，即max_fb_acc_
+    Eigen::Vector3d a_fb = Kp * pos_error + Kv * vel_error;  // feedforward term for trajectory error
+    float max_fb_acc_ = 9.0;
+    if (a_fb.norm() > max_fb_acc_)
+    {
+        a_fb = (max_fb_acc_ / a_fb.norm()) * a_fb;  // Clip acceleration if reference is too large
+        ROS_WARN("---->a_fb is too large.");
+    }
+        
+    Eigen::Vector3d g_ << 0.0, 0.0, -9.8;
+    // 期望加速度 = 加速度反馈部分 + 加速度参考值  - 重力加速度
+    Eigen::Vector3d a_des = a_fb + acc_des  - g_;
+
+    // 计算期望四元数
+    q_des = acc2quaternion(a_des, mavYaw_);
+}
+
+
 
 
 #endif

@@ -8,8 +8,19 @@ int main(int argc, char **argv)
     ros::NodeHandle nh("~");
     ros::Rate rate(100.0);
 
+    nh.param<double>("gain/Kp_xy", Kp(0,0), 3.0f);
+    nh.param<double>("gain/Kp_xy", Kp(1,1), 3.0f);
+    nh.param<double>("gain/Kp_z" , Kp(2,2), 3.0f);
+    nh.param<double>("gain/Kv_xy", Kv(0,0), 1.0f);
+    nh.param<double>("gain/Kv_xy", Kv(1,1), 1.0f);
+    nh.param<double>("gain/Kv_z" , Kv(2,2), 1.0f);
+    nh.param<double>("gain/Ka_xy", Ka(0,0), 1.0f);
+    nh.param<double>("gain/Ka_xy", Ka(1,1), 1.0f);
+    nh.param<double>("gain/Ka_z" , Ka(2,2), 1.0f);
+
     odom_sub = nh.subscribe<nav_msgs::Odometry>( "/px4/drone_odom", 10, drone_odom_cb);
 
+    // 轨迹控制频率100hz
     traj_cmd_sub  = nh.subscribe<quadrotor_msgs::PositionCommand>("/planning/pos_cmd", 10, traj_cmd_cb);
 
     cmd_sub  = nh.subscribe<prometheus_msgs::ControlCommand>("/prometheus/control_command", 10, cmd_cb);
@@ -21,8 +32,6 @@ int main(int argc, char **argv)
     arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
 
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
-
-    pos_controller controller;
 
     init();
 
